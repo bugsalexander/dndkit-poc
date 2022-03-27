@@ -78,8 +78,8 @@ const SmartBlock = ({ dragging, id }) => {
   );
 };
 
+let cid = 1;
 const initState = () => {
-  let cid = 1;
   return new Array(16).fill(0).map((_, i) => ({
     id: `parent-${i}`,
     children: new Array(4).fill(0).map((_) => ({ id: `child-${cid++}` })),
@@ -87,7 +87,7 @@ const initState = () => {
 };
 
 export default function Home() {
-  const [state, setState] = useState<DNDSTate>(initState());
+  const [state, setState] = useState<DNDSTate>(initState);
 
   return (
     <DndContext onDragEnd={handleDragEnd} >
@@ -113,7 +113,7 @@ export default function Home() {
             (c) => c.id === event.active.id
           );
           newParent.children.push({...child});
-          child.id = `${child.id}-clone`
+          child.id = `child-${cid++}`
           // remove the thingy from its previous parent id
           console.log(
             `old: ${oldParent.id}, new: ${newParent.id}, child: ${child.id}`
