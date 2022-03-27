@@ -26,9 +26,9 @@ const Container = ({ c, id }) => {
     width: "200px",
     height: "200px",
     border: "3px solid red",
-    flexDirection: "column",
+    flexDirection: "column" as const,
     background: isOver ? "green" : undefined,
-  } as const;
+  };
 
   return (
     <div ref={setNodeRef} style={style}>
@@ -63,8 +63,6 @@ const SmartBlock = ({ dragging, id }) => {
   const { setNodeRef, transform, listeners, attributes } = useDraggable({
     id,
   });
-
-  const overlay = typeof document !== "undefined";
   return (
     <>
       <Block
@@ -78,25 +76,38 @@ const SmartBlock = ({ dragging, id }) => {
   );
 };
 
-let cid = 1;
-const initState = () => {
-  return new Array(16).fill(0).map((_, i) => ({
+const initState = (multiplier) => () => {
+  let cid = 1;
+  return new Array(16 * multiplier).fill(0).map((_, i) => ({
     id: `parent-${i}`,
-    children: new Array(4).fill(0).map((_) => ({ id: `child-${cid++}` })),
+    children: new Array(4).fill(0).map((_) => ({ id: `${cid++}` })),
   }));
 };
+const initStateBig = initState(16);
+const initStateSmall = initState(4);
 
 export default function Home() {
-  const [state, setState] = useState<DNDSTate>(initState);
+  const [size, setSize] = useState(true);
+  const [state, setState] = useState<DNDSTate>(initStateSmall);
 
   return (
-    <DndContext onDragEnd={handleDragEnd} >
-      <div style={{ display: "flex", flexWrap: "wrap" }}>
-        {state.map((c) => (
-          <Container c={c} id={c.id} key={c.id}></Container>
-        ))}
-      </div>
-    </DndContext>
+    <div>
+      <button
+        onClick={(e) => {
+          setSize((size) => !size);
+          setState(size ? initStateBig : initStateSmall);
+        }}
+      >
+        using size: {size ? "small" : "big"}
+      </button>
+      <DndContext onDragEnd={handleDragEnd}>
+        <div style={{ display: "flex", flexWrap: "wrap" }}>
+          {state.map((c) => (
+            <Container c={c} id={c.id} key={c.id}></Container>
+          ))}
+        </div>
+      </DndContext>
+    </div>
   );
 
   function handleDragEnd(event: DragEndEvent) {
@@ -112,8 +123,11 @@ export default function Home() {
           const child = oldParent.children.find(
             (c) => c.id === event.active.id
           );
-          newParent.children.push({...child});
-          child.id = `child-${cid++}`
+          oldParent.children = oldParent.children.filter(
+            (c) => c.id !== event.active.id
+          );
+          // newParent.children.push({ ...child, id: `${cid++}` });
+          newParent.children.push(child);
           // remove the thingy from its previous parent id
           console.log(
             `old: ${oldParent.id}, new: ${newParent.id}, child: ${child.id}`
